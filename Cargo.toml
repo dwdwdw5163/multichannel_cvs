@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.89"
 bytemuck = "1.18.0"
+visa-rs = "0.6.2"

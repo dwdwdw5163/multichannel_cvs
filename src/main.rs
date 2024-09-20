@@ -2,6 +2,7 @@ use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use anyhow::Error;
 
 use bytemuck::NoUninit;
+use visa_rs::{enums::attribute::{AttrTermchar, AttrTermcharEn, AttrTmoValue, HasAttribute}, vs::{viPrintf, viSetAttribute, VI_TRUE}};
 
 #[derive(Debug, Clone, Copy)]
 struct State {
@@ -71,7 +72,47 @@ impl From<State> for DataFormat {
     }
 }
 
+
+fn find_an_instr() -> visa_rs::Result<()>{
+    use std::ffi::CString;
+    use std::io::{BufRead, BufReader, Read, Write};
+    use visa_rs::prelude::*;
+
+    // open default resource manager
+    let rm: DefaultRM = DefaultRM::new()?;
+
+    // expression to match resource name
+    let expr = CString::new("USB0::0x1313?*INSTR").unwrap().into();
+
+    // find the first resource matched
+    let rsc = rm.find_res(&expr)?;
+    
+    // open a session to the resource, the session will be closed when rm is dropped
+    let instr: Instrument = rm.open(&rsc, AccessMode::NO_LOCK, TIMEOUT_IMMEDIATE)?;
+
+    //Set the answer timeout
+    instr.set_attr(AttrTmoValue::new_checked(5000));
+
+    //Enable the terminal character
+    instr.set_attr(AttrTermcharEn::new_checked(VI_TRUE));
+    instr.set_attr(AttrTermchar::new_checked('\n'));
+
+    // write message
+    (&instr).write_all(b"*IDN?\n").map_err(io_to_vs_err)?;
+
+    // read response
+    let mut buf_reader = BufReader::new(&instr);
+    let mut buf = String::new();
+    buf_reader.read_line(&mut buf).map_err(io_to_vs_err)?;
+
+    eprintln!("{}", buf);
+    Ok(())
+}
+
 fn main() -> Result<(), Error>{
+
+    find_an_instr()?;
+    
     let state = State {channel:2, voltage: 0.0};
     let data = DataFormat::from(state);
 
