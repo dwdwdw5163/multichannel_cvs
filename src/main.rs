@@ -103,7 +103,7 @@ fn find_an_instr() -> visa_rs::Result<()>{
     //Read the power
 
     for _ in 0..10 {
-        instr.write_all(b"MEASURE:POWER?\n").map_err(io_to_vs_err)?;
+        (&instr).write_all(b"MEASURE:POWER?\n").map_err(io_to_vs_err)?;
         buf_reader.read_line(&mut buf).map_err(io_to_vs_err)?;
 	println!("{}", buf);
     }
@@ -111,8 +111,10 @@ fn find_an_instr() -> visa_rs::Result<()>{
     
     
     //Disconnect the device
-    viClose(instr);
-    viClose(defaultRM);
+    instr.clear();
+    rm.close_all();
+    
+    
     Ok(())
 }
 
