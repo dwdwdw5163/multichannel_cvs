@@ -90,13 +90,6 @@ fn find_an_instr() -> visa_rs::Result<()>{
     // open a session to the resource, the session will be closed when rm is dropped
     let instr: Instrument = rm.open(&rsc, AccessMode::NO_LOCK, TIMEOUT_IMMEDIATE)?;
 
-    //Set the answer timeout
-    instr.set_attr(AttrTmoValue::new_checked(5000));
-
-    //Enable the terminal character
-    instr.set_attr(AttrTermcharEn::new_checked(VI_TRUE));
-    instr.set_attr(AttrTermchar::new_checked('\n'));
-
     // write message
     (&instr).write_all(b"*IDN?\n").map_err(io_to_vs_err)?;
 
@@ -106,6 +99,20 @@ fn find_an_instr() -> visa_rs::Result<()>{
     buf_reader.read_line(&mut buf).map_err(io_to_vs_err)?;
 
     eprintln!("{}", buf);
+
+    //Read the power
+
+    for _ in 0..10 {
+        instr.write_all(b"MEASURE:POWER?\n").map_err(io_to_vs_err)?;
+        buf_reader.read_line(&mut buf).map_err(io_to_vs_err)?;
+	println!("{}", buf);
+    }
+
+    
+    
+    //Disconnect the device
+    viClose(instr);
+    viClose(defaultRM);
     Ok(())
 }
 
