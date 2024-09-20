@@ -3,6 +3,7 @@ use anyhow::Error;
 
 use bytemuck::NoUninit;
 
+#[derive(Debug, Clone, Copy)]
 struct State {
     /// channel number 0-255
     channel: u8,
@@ -51,7 +52,9 @@ impl From<State> for DataFormat {
         // channel select
         data_format.instrcution += value.channel % 32;
         // data voltage/max voltage * 2^14
-        let data = ((value.voltage + 0.0) / 10.0 * 2.0_f32.powi(14)) as u16;
+        let data: f32 = (value.voltage + 10.0) / 20.0 * 2.0_f32.powi(16);
+        let data = data as u16;
+
         data_format.data = data.swap_bytes(); // format to big endian
         
         let checksum: u8 = unsafe {
@@ -70,10 +73,10 @@ impl From<State> for DataFormat {
 }
 
 fn main() -> Result<(), Error>{
-    let state = State {channel:2, voltage: 10.0};
+    let state = State {channel:2, voltage: 0.0};
     let data = DataFormat::from(state);
 
-    let socket = UdpSocket::bind("127.0.0.1:1234").expect("couldn't bind to address");
+    let socket = UdpSocket::bind("169.254.1.205:1234").expect("couldn't bind to address");
     let receiver_addr = SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(169, 254, 1, 10)), 1234);
     
     println!("{:X?}", bytemuck::bytes_of(&data));
