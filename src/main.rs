@@ -57,14 +57,13 @@ impl From<State> for DataFormat {
 
         data_format.data = data.swap_bytes(); // format to big endian
         
-        let checksum: u8 = unsafe {
+        let checksum: u8 =
             0xaa_u8
-                .unchecked_add(0xbb_u8)
-                .unchecked_add(data_format.fb_chip)
-                .unchecked_add(data_format.instrcution)
-                .unchecked_add((data_format.data >> 8) as u8)
-                .unchecked_add((data_format.data & 0xff) as u8)
-        };
+                .wrapping_add(0xbb_u8)
+                .wrapping_add(data_format.fb_chip)
+                .wrapping_add(data_format.instrcution)
+                .wrapping_add((data_format.data >> 8) as u8)
+                .wrapping_add((data_format.data & 0xff) as u8);
 
         data_format.check = !checksum;
 
